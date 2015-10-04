@@ -58,6 +58,8 @@ class Platoon:
         self.initnum = initnum
         self.lamda = lamda
         self.count = 0
+        self.comenum = 0 # total come cars in this platoon
+        self.crossnum = 0 #total cross cars in this platoon
         self.lastcarindex = -1  #last come car
         self.cometime = {}
         self.CreatCars()
@@ -108,6 +110,8 @@ class Platoon:
              else:
                  return False
                  
+    def ShowPlatoon(self):
+        print('init car num = %d,cars come in this cycle = %d, total cross cars = %d'%(self.count,self.comenum,self.crossnum))
         
 class Simulation:
     def __init__(self,time = config.time,cycle = config.cycle,green = config.green):
@@ -116,6 +120,8 @@ class Simulation:
         self.green = green
         self.red = self.cycle - self.green
         self.sigstate = 0 #0:red 1:green
+        self.passgreen = -1
+        self.passred = -1
         self.control = Control()
     
     def UpdateConfig(self,time,cycle,green):
@@ -136,6 +142,8 @@ class Simulation:
             self.SimulationOneTime()
             
     def SimulationOneTime(self):
+        self.passgreen = -1
+        self.passred = -1
         for i in range(self.cycle):
             self.SimulationStep(i)
               
@@ -143,19 +151,22 @@ class Simulation:
         self.JudgeSec(sec)
         if self.sigstate == 0:
             self.control.RedLogic(sec)
+            self.passred += 1
         else:
             self.control.GreenLogic(sec)
-        
-        
+            self.passgreen += 1
+    
+    
 class Control:
     def __init__(self):
         self.stplatoon = Platoon(0,config.stinitnum,config.stlamda) 
         self.leftplatoon = Platoon(1,config.leftinitnum,config.leftlamda)
         self.crossgap  = config.crossgap
-        self.leftcrossnum = 0
-        
-    def RedCarComeUpdate(self,platoon,sec):
+    
+#if a platoon cannot go away,it must judge the next car come and line up    
+    def HoldCarComeUpdate(self,platoon,sec):
         if platoon.IsCome(sec):
+            platoon.comenum += 1
             if platoon.platoon[platoon.lastcarindex].index == 0:
                 platoon.platoon[platoon.lastcarindex].UpdateHeadway(0)
             else:
@@ -163,11 +174,36 @@ class Control:
         else:
             pass
         
-    def RedLogic(self,sec):
-        self.RedCarComeUpdate(self.stplatoon,sec)
-        self.RedCarComeUpdate(self.leftplatoon,sec)
+#if a platoon is going away,it must judge the next car come and the car line up or cross        
+    def PassCarComeUpdate(self,platoon,sec):
+        if platoon.IsCome(sec):
+            platoon.comenum += 1
+            if platoon.platoon[platoon.lastcarindex].index == 0:
+                self.InterAction()
+            else:
+                platoon.platoon[platoon.lastcarindex].UpdateHeadway()
+        else:
+            pass
+
+#cross interaction between of left and straight    
+    def InterAction(self):
+        pass
+        
+    def CarGoUpdate(self,platoon):
+        if platoon.platoon[0].headway == 0:
+            platoon.DeleteCar(platoon.platoon[0].GetID)
+            platoon.crossnum += 1
+            platoon.platoon[0].UpdateHeadway(platoon.platoon[0].headway - 1)
+        else:
+            platoon.platoon[0].UpdateHeadway(platoon.platoon[0].headway - 1)
     
-    def GreenLogic(self,sec):
+    def RedLogic(self,sec):
+        self.HoldCarComeUpdate(self.stplatoon,sec)
+        self.HoldCarComeUpdate(self.leftplatoon,sec)
+
+#It is the logic of green time
+#If leftcrossconfig = 1 the left cars will go in front of straight at the begining of green  
+    def GreenLogic(self,sec,leftcrossconfig = config.leftgofirst):
         pass
     
     
@@ -175,14 +211,16 @@ class Control:
 def gettime(fun):
     start = time.clock()
     fun()
+    print('-----------------finished-----------------')
     print('cost time: %.2fs'%(time.clock()-start))
 
 def main():
     sim = Simulation()
     sim.SimulationRun() 
     for i in range(10):
-        sim.control.leftplatoon.platoon[i].ShowCar()     
-        
+        sim.control.leftplatoon.platoon[i].ShowCar()
+        sim.control.leftplatoon.ShowPlatoon()
+        print(sim.passgreen)
 #    sp = Platoon(1,20)
 #    for i in sp.platoon:
 #        sp.platoon[i].ShowCar()
