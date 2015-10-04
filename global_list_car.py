@@ -7,7 +7,7 @@ Created on Sat Oct  3 15:47:18 2015
 
 #simulation config
 #times of simulation
-time = 300 
+time = 5
 #cycle (s)
 cycle = 90
 #green time of cycle (s)

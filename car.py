@@ -96,6 +96,10 @@ class Platoon:
         self.count -=1
         for Car in self.platoon:
             self.platoon[Car].UpdateIndex(self.platoon[Car].index - 1)
+        for i in range(1,len(self.platoon)+1):
+            self.platoon[i-1] = self.platoon[i]
+        del self.platoon[len(self.platoon)-1]
+            
             
     def IsCome(self,sec):     
         if self.lastcarindex == -1:
@@ -139,7 +143,7 @@ class Simulation:
     
     def SimulationRun(self):
         for i in range(self.time):
-            print ('---The %d times of this simulation---' % (i+1))
+            print ('---The %d time of this simulation---' % (i+1))
             self.SimulationOneTime()
             self.SimulationShow()
     
@@ -194,9 +198,7 @@ class Control:
     def PassCarComeUpdate(self,platoon,sec):
         if platoon.IsCome(sec):
             platoon.comenum += 1
-            if platoon.platoon[platoon.lastcarindex].index == 0:
-                self.GreenInterAction()
-            else:
+            if platoon.platoon[platoon.lastcarindex].index != 0:
                 platoon.platoon[platoon.lastcarindex].UpdateHeadway()
                 platoon.platoon[platoon.lastcarindex].UpdateState(1)
         else:
@@ -216,7 +218,7 @@ class Control:
         
     def CarGoUpdate(self,platoon):
         if platoon.platoon[0].headway == 0:
-            platoon.DeleteCar(platoon.platoon[0].GetId)
+            platoon.DeleteCar(0)
             platoon.crossnum += 1
             platoon.platoon[0].UpdateHeadway(platoon.platoon[0].headway - 1)
         else:
@@ -231,6 +233,7 @@ class Control:
     def GreenLogic(self,sec,leftcrossconfig = config.leftgofirst):
         self.PassCarComeUpdate(self.stplatoon,sec)
         self.PassCarComeUpdate(self.leftplatoon,sec)
+        self.GreenInterAction()
     
     
 #calculate the program run time
@@ -243,24 +246,16 @@ def gettime(fun):
 def main():
     sim = Simulation()
     sim.SimulationRun() 
-#    for i in range(10):
-#        sim.control.leftplatoon.platoon[i].ShowCar()
-#        sim.control.leftplatoon.ShowPlatoon()
-#        print(sim.passgreen)
-#    sp = Platoon(1,20)
+#    sp = Platoon(1,10,(1/6))
 #    for i in sp.platoon:
 #        sp.platoon[i].ShowCar()
-#    
+#    print(sp.platoon)
 #    print('\n')    
 #    sp.DeleteCar(0)
+#    print(sp.platoon)
 #    for i in sp.platoon:
 #        sp.platoon[i].ShowCar()
-#        
-#    print('\n')
-#    print(sp.cometime)
-#    for i in range(90):
-#        print('index:%d , iscarcome:%s'%(sp.lastcarindex,sp.IsCome(i)))
-        
+                
         
 if __name__=='__main__':
     gettime(main)
